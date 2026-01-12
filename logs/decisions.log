@@ -1,0 +1,192 @@
+# Decisions Log — Ship Web Application
+
+This file tracks significant technical and architectural decisions made during the project.
+
+---
+
+## 2026-01-11 22:00 — Project Planning Documents Created
+
+**Decision:** Created REQUIREMENTS.md, SYSTEM_PLAN.md, and TICKETS.md from approved DESIGN.md
+
+**Rationale:**
+- Design phase completed and approved by CEO
+- Need structured requirements to guide implementation
+- System plan provides architecture blueprint
+- Tickets break work into actionable batches
+
+**Impact:**
+- Clear roadmap for Codex (Builder) to execute
+- All team members aligned on what's being built
+- Reduces scope creep and misunderstandings
+
+---
+
+## 2026-01-11 22:00 — Monorepo Architecture
+
+**Decision:** Use monorepo structure with separate frontend (apps/web) and backend (apps/api)
+
+**Rationale:**
+- Share TypeScript types/schemas between frontend and backend via /packages/shared
+- Single deployment process
+- Easier local development
+- Smaller team, less overhead from managing multiple repos
+
+**Impact:**
+- Need workspace tooling (pnpm workspaces or npm workspaces)
+- Shared code lives in /packages/shared
+- Single git repo, simpler CI/CD
+
+**See:** SYSTEM_PLAN.md ADR-006
+
+---
+
+## 2026-01-11 22:00 — Tech Stack Selected
+
+**Decision:**
+- Frontend: Next.js 14+ App Router + Tailwind CSS + Radix UI
+- Backend: Node.js/Bun + Express/Hono + Prisma ORM
+- Database: PostgreSQL
+- State: React Query + Zustand
+- Real-time: Socket.io
+
+**Rationale:**
+- Next.js App Router is modern, future-proof, with excellent performance
+- Tailwind enables rapid UI development matching DESIGN.md tokens
+- Radix UI provides accessible, unstyled primitives
+- PostgreSQL chosen for relational data integrity and JSONB flexibility
+- React Query handles server state caching/invalidation automatically
+- Socket.io needed for real-time build progress updates
+
+**Impact:**
+- All dependencies must align with these choices
+- Team needs to follow Next.js 14 patterns (Server Components, etc.)
+- Database migrations managed via Prisma
+
+**See:** SYSTEM_PLAN.md Technology Stack section
+
+---
+
+## 2026-01-11 22:00 — Security Architecture
+
+**Decision:**
+- API keys encrypted at rest (AES-256)
+- Passwords hashed with bcrypt (cost factor 12+)
+- JWT sessions in HTTP-only, Secure, SameSite=Strict cookies
+- All input validated server-side with Zod
+
+**Rationale:**
+- Protecting user API keys is critical (they pay for AI usage)
+- Standard security best practices for auth
+- HTTP-only cookies prevent XSS attacks
+- Zod schemas shared between FE/BE ensure consistent validation
+
+**Impact:**
+- Need crypto utilities for API key encryption/decryption
+- All protected routes require JWT verification middleware
+- Never expose sensitive data in logs or client code
+
+**See:** REQUIREMENTS.md NFR-2: Security
+
+---
+
+## 2026-01-11 22:00 — Database Schema Defined
+
+**Decision:** Created complete schema with 8 tables: users, sessions, oauth_accounts, api_connections, projects, project_files, build_logs, chat_messages
+
+**Rationale:**
+- Relational structure reflects user → projects → files hierarchy
+- Separate tables for OAuth and session management
+- API connections encrypted and user-scoped
+- Build logs separate table (auto-delete after 30 days)
+- Chat messages stored for discovery/requirements phases
+
+**Impact:**
+- Database migrations must be run before backend starts
+- Foreign key constraints enforce data integrity
+- Indexes optimize common queries (user_id, project_id)
+
+**See:** SYSTEM_PLAN.md Data Model section
+
+---
+
+## 2026-01-11 22:00 — Milestone Structure (4 Milestones, ~12 Batches)
+
+**Decision:**
+- M1: Foundation (Batch 1-3) — Auth, dashboard, project CRUD
+- M2: AI Integration (Batch 4-7) — Connect AI, Discovery phase
+- M3: Build Orchestration (Batch 8-14) — Requirements, Build, Deploy
+- M4: Polish & Launch (Batch 15-17) — Accessibility, performance, security
+
+**Rationale:**
+- Incremental delivery: each milestone provides value
+- M1 gives user auth and project management without AI (testable)
+- M2 adds AI connections and discovery (core differentiator)
+- M3 completes end-to-end build flow (MVP complete)
+- M4 production-ready polish
+
+**Impact:**
+- CEO can review progress after each milestone
+- Earlier milestones can be tested/validated before later ones
+- Scope clearly defined for each phase
+
+**See:** SYSTEM_PLAN.md Milestones section
+
+---
+
+## 2026-01-11 22:00 — Batch 1 Scope Defined (T1-T3)
+
+**Decision:** First batch focuses on monorepo setup, database, and authentication API
+
+**Rationale:**
+- Foundation must be solid before building on top
+- Authentication required for all protected features
+- Database schema needed before any CRUD operations
+- Establishes patterns for rest of project
+
+**Impact:**
+- T1: Project setup (monorepo, Next.js, backend)
+- T2: Database with Prisma ORM and migrations
+- T3: Auth service (signup, login, logout with JWT)
+- After Batch 1, can build protected frontend features
+
+**See:** TICKETS.md Batch 1
+
+---
+
+## Open Questions for CEO
+
+These decisions need CEO input before implementation:
+
+1. **Authentication library:** next-auth (Auth.js) vs Clerk?
+   - next-auth: Self-hosted, free, more control
+   - Clerk: Managed service, easier setup, costs $$$
+   - **Recommendation:** next-auth for MVP (cost-effective, flexible)
+
+2. **Queue system:** BullMQ (Redis-based) vs pg-boss (Postgres-based)?
+   - BullMQ: More features, requires Redis (another dependency)
+   - pg-boss: Simpler, uses existing Postgres, fewer features
+   - **Recommendation:** pg-boss for MVP (simpler stack)
+
+3. **ORM:** Prisma vs Drizzle?
+   - Prisma: Better DX, migrations, studio GUI
+   - Drizzle: Better performance, more control, newer
+   - **Recommendation:** Prisma (mature, team familiar)
+
+4. **Backend runtime:** Node.js vs Bun?
+   - Node.js: Ecosystem maturity, battle-tested
+   - Bun: Faster, modern, less mature
+   - **Recommendation:** Node.js 20+ for MVP (stability)
+
+5. **File storage:** Filesystem vs S3/R2?
+   - Filesystem: Simpler for MVP, free
+   - S3/R2: Scalable, requires setup and costs
+   - **Recommendation:** Filesystem for MVP, migrate later
+
+6. **Deployment platform priority:** Vercel only vs Vercel + Netlify?
+   - Vercel only: Focus, best Next.js integration
+   - Both: More flexibility, more complexity
+   - **Recommendation:** Vercel only for MVP
+
+---
+
+**Last updated:** 2026-01-11

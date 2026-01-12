@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command=${1:-}
+
+case "$command" in
+  verify)
+    bash scripts/verify.sh | tee logs/verify.log
+    ;;
+  "")
+    echo "Usage: dev <command>"
+    echo "Commands: verify"
+    exit 1
+    ;;
+  *)
+    echo "Unknown command: $command"
+    exit 1
+    ;;
+esac
