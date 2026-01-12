@@ -31,12 +31,12 @@ run_node() {
 }
 
 run_workspace_typecheck() {
-  if [ -f apps/web/package.json ] && npm --workspace apps/web run --silent 2>/dev/null | grep -q "typecheck"; then
+  if [ -f apps/web/package.json ] && [ -d apps/web/node_modules ] && npm --workspace apps/web run --silent 2>/dev/null | grep -q "typecheck"; then
     echo "→ Typecheck (web)"
     npm --workspace apps/web run typecheck || { echo "❌ Web typecheck failed"; exit 1; }
   fi
 
-  if [ -f apps/api/package.json ] && npm --workspace apps/api run --silent 2>/dev/null | grep -q "typecheck"; then
+  if [ -f apps/api/package.json ] && [ -d apps/api/node_modules ] && npm --workspace apps/api run --silent 2>/dev/null | grep -q "typecheck"; then
     echo "→ Typecheck (api)"
     npm --workspace apps/api run typecheck || { echo "❌ API typecheck failed"; exit 1; }
   fi
