@@ -15,8 +15,8 @@ export function Modal({ open, onOpenChange, title, description, children }: Moda
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-deep-navy/70" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-slate-700 bg-slate-800 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.55)]">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-deep-navy/70" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-slate-700 bg-slate-800 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.55)]">
           <div className="space-y-2">
             <Dialog.Title className="font-display text-2xl font-semibold">
               {title}

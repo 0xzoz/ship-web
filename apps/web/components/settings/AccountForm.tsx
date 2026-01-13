@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   changePasswordSchema,
@@ -26,6 +27,7 @@ import { getErrorMessage } from "../../lib/error-handler";
 
 export function AccountForm() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const [toast, setToast] = useState<{
     title: string;
     description?: string;
@@ -100,6 +102,8 @@ export function AccountForm() {
   const deleteMutation = useMutation({
     mutationFn: deleteAccount,
     onSuccess: () => {
+      setIsDeleteOpen(false);
+      router.push("/");
       setToast({
         title: "Account deleted",
         description: "Your account has been removed.",
