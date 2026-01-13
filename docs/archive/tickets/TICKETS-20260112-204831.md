@@ -1,0 +1,528 @@
+# TICKETS — Ship Web Application
+
+> **Generated from:** SYSTEM_PLAN.md | Milestone M1: Foundation
+> **Last updated:** 2026-01-11
+
+---
+
+## Batching Rules
+- 2–3 tickets max per batch, then stop and report
+- Commit after each batch to keep changes readable
+- After completion, archive `logs/verify.log` into `logs/archive/` and ticket snapshots into `docs/archive/tickets/`
+- Run `dev verify` after each batch
+
+---
+
+## Batch 1: Project Foundation Setup
+
+### T1: Initialize monorepo structure with Next.js frontend and Node.js backend
+
+**Files/folders:**
+- `/` (root)
+  - `package.json` (workspace root)
+  - `turbo.json` or similar for monorepo
+- `/apps/web/` (Next.js frontend)
+  - `package.json`
+  - `next.config.js`
+  - `tsconfig.json`
+  - `tailwind.config.js`
+  - `app/layout.tsx`
+  - `app/page.tsx` (basic landing)
+- `/apps/api/` (Node.js backend)
+  - `package.json`
+  - `tsconfig.json`
+  - `src/server.ts`
+- `/packages/shared/` (shared types/schemas)
+  - `package.json`
+  - `tsconfig.json`
+  - `src/index.ts`
+
+**Acceptance:**
+- [ ] Monorepo structure with pnpm workspaces or npm workspaces
+- [ ] Next.js 14+ with App Router initialized
+- [ ] Backend Express/Hono server runs on port 3001
+- [ ] Frontend runs on port 3000
+- [ ] TypeScript strict mode enabled on both
+- [ ] Tailwind CSS configured with DESIGN.md tokens (colors, fonts)
+- [ ] Basic landing page shows "Ship" branding
+- [ ] `pnpm dev` or `npm run dev` starts both frontend and backend
+
+**Output shape:**
+```
+Root:
+- package.json (workspaces defined)
+- turbo.json (optional)
+- pnpm-workspace.yaml or similar
+
+Frontend (apps/web):
+- Next.js 14+ running
+- Tailwind configured with Ship design tokens
+- Landing page accessible at localhost:3000
+
+Backend (apps/api):
+- Express/Hono server running
+- Health check endpoint: GET /api/health → { status: "ok" }
+- Accessible at localhost:3001
+```
+
+---
+
+### T2: Set up PostgreSQL database with Prisma ORM and initial schema
+
+**Files/folders:**
+- `/apps/api/prisma/`
+  - `schema.prisma`
+  - `migrations/` (auto-generated)
+- `/apps/api/src/config/`
+  - `database.ts` (Prisma client singleton)
+  - `env.ts` (environment validation with Zod)
+- `/apps/api/.env.example`
+- `/apps/api/.env` (gitignored)
+
+**Acceptance:**
+- [ ] Prisma installed and configured
+- [ ] Database schema matches SYSTEM_PLAN.md tables:
+  - `users` (id, email, password_hash, name, created_at, updated_at, last_login_at)
+  - `sessions` (id, user_id, token_hash, expires_at, created_at)
+  - `oauth_accounts` (id, user_id, provider, provider_user_id, email, created_at)
+  - `projects` (id, user_id, name, description, current_phase, status, deploy_url, created_at, updated_at, last_activity_at)
+  - `api_connections` (id, user_id, service, encrypted_api_key, status, last_tested_at, created_at, updated_at)
+- [ ] Indexes created as specified
+- [ ] `.env.example` has DATABASE_URL placeholder
+- [ ] Migration applied successfully to local Postgres
+- [ ] Prisma client generated and importable
+
+**Output shape:**
+```
+Database:
+- All tables created with correct schemas
+- Foreign keys and indexes in place
+- Prisma client ready for queries
+
+Code:
+- apps/api/prisma/schema.prisma (complete schema)
+- apps/api/src/config/database.ts exports prisma client
+- apps/api/.env.example has DATABASE_URL
+```
+
+---
+
+### T3: Implement authentication service (signup, login, logout) with bcrypt and JWT
+
+**Files/folders:**
+- `/apps/api/src/routes/`
+  - `auth.routes.ts`
+- `/apps/api/src/services/`
+  - `auth.service.ts`
+- `/apps/api/src/middleware/`
+  - `auth.middleware.ts` (JWT verification)
+  - `validate.middleware.ts` (Zod validation)
+- `/apps/api/src/utils/`
+  - `crypto.ts` (bcrypt helpers, JWT signing/verifying)
+- `/packages/shared/src/schemas/`
+  - `auth.schema.ts` (Zod schemas for signup/login)
+
+**Acceptance:**
+- [ ] POST /api/auth/signup
+  - Validates email format and password length (min 8 chars)
+  - Hashes password with bcrypt (cost factor 12)
+  - Creates user in database
+  - Returns JWT in HTTP-only, Secure, SameSite cookie
+  - Returns user object (without password_hash)
+- [ ] POST /api/auth/login
+  - Validates credentials
+  - Compares password with bcrypt
+  - Creates session in database
+  - Returns JWT in HTTP-only cookie
+  - Updates last_login_at
+- [ ] POST /api/auth/logout
+  - Requires valid JWT
+  - Deletes session from database
+  - Clears cookie
+- [ ] Auth middleware protects routes requiring authentication
+- [ ] Password validation: min 8 chars, rejects common weak passwords
+- [ ] Error messages generic for security: "Invalid email or password"
+- [ ] All schemas shared between frontend and backend via /packages/shared
+
+**Output shape:**
+```
+API Endpoints:
+- POST /api/auth/signup → { user: { id, email, name, created_at } }
+- POST /api/auth/login → { user: { id, email, name, last_login_at } }
+- POST /api/auth/logout → { success: true }
+- GET /api/auth/me (protected) → { user: {...} }
+
+Security:
+- Passwords bcrypt hashed (cost 12)
+- JWT in HTTP-only, Secure, SameSite=Strict cookie
+- Token expiration: 30 days
+- Sessions tracked in database
+```
+
+---
+
+## Batch 2: Frontend Authentication & Dashboard
+
+### T4: Create authentication UI (login, signup pages) with form validation
+
+**Files/folders:**
+- `/apps/web/app/(public)/`
+  - `login/page.tsx`
+  - `signup/page.tsx`
+- `/apps/web/components/forms/`
+  - `LoginForm.tsx`
+  - `SignupForm.tsx`
+- `/apps/web/components/ui/`
+  - `Button.tsx` (Radix UI + Tailwind)
+  - `Input.tsx`
+  - `Label.tsx`
+  - `FormError.tsx`
+- `/apps/web/lib/`
+  - `api-client.ts` (fetch wrapper for API calls)
+  - `auth.ts` (client-side auth utilities)
+
+**Acceptance:**
+- [ ] Login page at /login with LoginForm component
+- [ ] Signup page at /signup with SignupForm component
+- [ ] Forms use React Hook Form + Zod validation (shared schemas from /packages/shared)
+- [ ] Visual states per DESIGN.md:
+  - Default, Hover, Focus (amber ring), Loading, Error, Success
+- [ ] Error messages match DESIGN.md specifications
+- [ ] Form submission calls backend API
+- [ ] On success: redirect to /dashboard
+- [ ] On error: show error message, keep form data
+- [ ] "Forgot password?" link (non-functional, placeholder)
+- [ ] "Don't have an account? Sign up" / "Already have an account? Log in" links work
+- [ ] Tailwind styling matches Ship design tokens (Beacon Amber, Deep Navy, etc.)
+- [ ] Accessible: keyboard navigation, screen reader labels, focus indicators
+
+**Output shape:**
+```
+Pages:
+- /login → Login page with email/password form
+- /signup → Signup page with email/password/name form
+
+UI:
+- Matches DESIGN.md visual style (dark theme, amber accents)
+- Forms validate client-side before submission
+- Clear error messages on validation failure
+- Loading states during API calls
+```
+
+---
+
+### T5: Create protected layout and dashboard page with empty state
+
+**Files/folders:**
+- `/apps/web/app/(protected)/`
+  - `layout.tsx` (protected layout wrapper)
+  - `dashboard/page.tsx`
+- `/apps/web/components/layout/`
+  - `Navbar.tsx`
+- `/apps/web/components/project/`
+  - `ProjectCard.tsx` (stub for later)
+  - `EmptyState.tsx`
+- `/apps/web/lib/`
+  - `auth-provider.tsx` (client context for auth state)
+- `/apps/web/middleware.ts` (Next.js middleware for route protection)
+
+**Acceptance:**
+- [ ] Protected layout checks auth status
+  - If not authenticated: redirect to /login?redirect=[original-path]
+  - If authenticated: render children
+- [ ] Navbar component with:
+  - "Ship" logo/wordmark
+  - Account menu (dropdown): Settings, Log out
+- [ ] Dashboard page shows:
+  - Heading: "Your harbor"
+  - Empty state (no projects): "Your harbor is empty. Every great voyage starts with an idea. What will you build?"
+  - "New Project" button (prominent, Beacon Amber)
+- [ ] Log out functionality in navbar
+- [ ] Next.js middleware protects /dashboard, /project/*, /settings routes
+- [ ] Unauthenticated access redirects to /login with return URL
+- [ ] After login, user redirected to original destination
+
+**Output shape:**
+```
+Protected Routes:
+- /dashboard → Shows empty state initially
+- Navbar present with logo and account menu
+- "New Project" button visible (non-functional yet)
+
+Auth Flow:
+- Accessing /dashboard while logged out → redirect to /login
+- After login → redirect back to /dashboard
+- Log out → redirect to /
+```
+
+---
+
+### T6: Implement project CRUD API and connect to dashboard
+
+**Files/folders:**
+- `/apps/api/src/routes/`
+  - `projects.routes.ts`
+- `/apps/api/src/services/`
+  - `project.service.ts`
+- `/packages/shared/src/schemas/`
+  - `project.schema.ts`
+- `/apps/web/app/(protected)/dashboard/page.tsx` (update)
+- `/apps/web/components/project/`
+  - `ProjectCard.tsx` (implement)
+  - `CreateProjectModal.tsx`
+- `/apps/web/lib/hooks/`
+  - `useProjects.ts` (React Query hook)
+
+**Acceptance:**
+- [ ] Backend API endpoints:
+  - GET /api/projects → List user's projects
+  - POST /api/projects → Create new project (name, description)
+  - GET /api/projects/:id → Get project details
+  - DELETE /api/projects/:id → Delete project
+- [ ] All endpoints require authentication (JWT)
+- [ ] Validation with Zod schemas
+- [ ] Dashboard fetches and displays projects
+- [ ] "New Project" button opens modal
+- [ ] CreateProjectModal:
+  - Name field (required, max 255 chars)
+  - Description field (optional, textarea)
+  - "Create" button
+  - On success: modal closes, project appears in grid
+- [ ] ProjectCard component:
+  - Shows project name, description (truncated)
+  - Shows status indicator (🟡 In Progress default)
+  - Shows current phase ("Discovery")
+  - Shows last activity ("Just now")
+  - Click card → navigate to /project/:id (placeholder page)
+- [ ] React Query for data fetching, caching, mutations
+- [ ] Optimistic updates on create/delete
+
+**Output shape:**
+```
+API:
+- GET /api/projects → { projects: [...] }
+- POST /api/projects → { project: {...} }
+- DELETE /api/projects/:id → { success: true }
+
+Dashboard:
+- Shows grid of project cards
+- "New Project" button functional
+- Can create and delete projects
+- Projects persist across page refresh
+```
+
+---
+
+## Batch 3: Settings & Foundation Polish
+
+### T7: Create settings page with account management
+
+**Files/folders:**
+- `/apps/web/app/(protected)/settings/`
+  - `page.tsx`
+  - `account/page.tsx`
+- `/apps/web/components/settings/`
+  - `SettingsTabs.tsx`
+  - `AccountForm.tsx`
+- `/apps/api/src/routes/`
+  - `users.routes.ts` (PATCH /api/users/me, etc.)
+
+**Acceptance:**
+- [ ] Settings page at /settings with tab navigation:
+  - Account tab (default)
+  - AI Connections tab (stub for Batch 4)
+- [ ] Account tab shows:
+  - Email (read-only, or editable with confirmation)
+  - Name (editable)
+  - Change password form (current password, new password, confirm)
+  - "Delete account" button (danger zone, requires confirmation)
+- [ ] Backend endpoints:
+  - PATCH /api/users/me → Update name/email
+  - POST /api/users/change-password → Change password
+  - DELETE /api/users/me → Delete account (cascade deletes projects, sessions)
+- [ ] Change password validates current password before updating
+- [ ] Delete account shows confirmation modal: "Are you sure? All projects will be deleted."
+- [ ] Success/error toast messages
+- [ ] Accessible and styled per DESIGN.md
+
+**Output shape:**
+```
+Settings:
+- /settings/account → Account management form
+- Can update name
+- Can change password
+- Can delete account (with confirmation)
+
+API:
+- PATCH /api/users/me → { user: {...} }
+- POST /api/users/change-password → { success: true }
+- DELETE /api/users/me → { success: true }
+```
+
+---
+
+### T8: Add design tokens, global styles, and UI polish
+
+**Files/folders:**
+- `/apps/web/tailwind.config.js` (update with full token set)
+- `/apps/web/app/globals.css` (update)
+- `/apps/web/components/ui/` (add missing components)
+  - `Toast.tsx`
+  - `Modal.tsx`
+  - `Dropdown.tsx`
+- `/apps/web/public/fonts/` (if using local fonts)
+
+**Acceptance:**
+- [ ] Tailwind config includes all DESIGN.md tokens:
+  - Colors: Beacon Amber (#f59e0b), Deep Navy (#0f172a), Warm White (#f8fafc), Slate shades, semantic colors (success, error, warning, info)
+  - Fonts: Fraunces (display), Inter (UI), JetBrains Mono (code)
+  - Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64, 96
+  - Component sizes: sm (32px), md (40px), lg (48px)
+- [ ] Google Fonts loaded (Fraunces, Inter)
+- [ ] Global styles set background (#0f172a), text color (#f8fafc)
+- [ ] Toast notification component (for success/error messages)
+- [ ] Modal component (Radix UI Dialog)
+- [ ] Dropdown component (Radix UI DropdownMenu)
+- [ ] All buttons, inputs, cards use consistent styling
+- [ ] Focus states show amber ring
+- [ ] Hover states implemented
+
+**Output shape:**
+```
+Design System:
+- All design tokens from DESIGN.md in Tailwind config
+- Typography hierarchy established
+- Consistent UI components across app
+- Dark theme with amber accents throughout
+- Accessible focus states
+```
+
+---
+
+### T9: Set up logging, error handling, and basic monitoring
+
+**Files/folders:**
+- `/apps/api/src/middleware/`
+  - `error.middleware.ts` (centralized error handler)
+  - `logger.middleware.ts` (request logging)
+- `/apps/api/src/utils/`
+  - `logger.ts` (Pino or Winston setup)
+  - `errors.ts` (custom error classes)
+- `/apps/web/lib/`
+  - `error-handler.ts` (client error boundary)
+- `/apps/web/app/error.tsx` (Next.js error boundary)
+
+**Acceptance:**
+- [ ] Backend logging with Pino or Winston:
+  - Logs all requests (method, path, status, duration)
+  - Logs errors with stack traces (development) or message only (production)
+  - JSON format for easy parsing
+- [ ] Centralized error handler middleware:
+  - Catches all errors
+  - Returns consistent error format: { error: { message, code } }
+  - Doesn't leak sensitive info in production
+- [ ] Custom error classes: BadRequestError, UnauthorizedError, NotFoundError, etc.
+- [ ] Frontend error boundary catches React errors
+- [ ] Global error handler for API call failures
+- [ ] User-friendly error messages shown (no raw stack traces)
+- [ ] 404 page for unknown routes
+- [ ] 500 page for server errors
+
+**Output shape:**
+```
+Backend:
+- All requests logged
+- Errors caught and formatted consistently
+- No sensitive data leaked in error responses
+
+Frontend:
+- Error boundaries prevent white screen
+- Clear error messages for users
+- Network errors handled gracefully
+```
+
+---
+
+## Batch 4 and Beyond
+
+**Batch 4-5:** AI Connections (M2 start)
+- T10: API key encryption/decryption service
+- T11: AI connection API endpoints (Claude, Codex)
+- T12: AI connection UI (Settings → AI Connections)
+- T13: Connection testing functionality
+
+**Batch 6-7:** Discovery Phase (M2 completion)
+- T14: Discovery chat interface (frontend)
+- T15: Claude API client integration
+- T16: WebSocket setup for real-time chat
+- T17: DISCOVERY.md generation
+
+**Batch 8-9:** Requirements Phase (M3 start)
+- T18: Requirements editor UI
+- T19: Feature list management (add, remove, prioritize)
+- T20: REQUIREMENTS.md generation
+
+**Batch 10-12:** Build Orchestration (M3 core)
+- T21: Build progress UI with WebSocket updates
+- T22: Orchestration engine (state machine)
+- T23: Claude API integration for planning
+- T24: Codex API integration for code generation
+- T25: Job queue setup (BullMQ or pg-boss)
+- T26: Error handling and recovery
+
+**Batch 13-14:** Review & Deploy (M3 completion)
+- T27: Review phase UI (preview, checklist)
+- T28: Vercel deployment integration
+- T29: Deployed success screen
+
+**Batch 15-17:** Polish & Launch (M4)
+- T30: Accessibility audit and fixes
+- T31: Performance optimization
+- T32: Security audit
+- T33: User onboarding flow improvements
+- T34: Analytics and monitoring
+- T35: Documentation
+
+---
+
+## Status
+
+**Current Batch:** Batch 1 (T1-T3)
+**Next Batch:** Batch 2 (T4-T6)
+
+**Milestone Progress:**
+- M1: Foundation → In Progress (Batch 1-3)
+- M2: AI Integration → Planned (Batch 4-7)
+- M3: Build Orchestration → Planned (Batch 8-14)
+- M4: Polish & Launch → Planned (Batch 15-17)
+
+---
+
+## Notes for Builder
+
+1. **CEO Decisions Needed Before Implementation:**
+   - Auth library: next-auth vs Clerk (impacts T3, T4)
+   - Queue system: BullMQ vs pg-boss (impacts Batch 10+)
+   - ORM: Prisma vs Drizzle (impacts T2)
+   - Backend runtime: Node.js vs Bun (impacts T1)
+
+2. **Dependencies:**
+   - T2 must complete before T3 (need database for auth)
+   - T3 must complete before T4 (need auth API for forms)
+   - T4-T5 must complete before T6 (need UI to display projects)
+
+3. **Testing:**
+   - Run `dev verify` after each batch
+   - Manual testing of auth flows critical (signup → login → protected route)
+   - Ensure database migrations work cleanly
+
+4. **Security Reminders:**
+   - Never commit .env files
+   - API keys encrypted in database
+   - Passwords bcrypt hashed (cost 12+)
+   - JWT in HTTP-only cookies only
+   - Validate all inputs server-side
+
+---
+
+**Last updated:** 2026-01-11
