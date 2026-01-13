@@ -31,10 +31,15 @@ export async function apiFetch<T>(
   const data = text ? safeJsonParse(text) : null;
 
   if (!response.ok) {
-    const message =
-      typeof data === "object" && data && "error" in data
-        ? String((data as { error?: string }).error)
-        : "Request failed";
+    let message = "Request failed";
+    if (typeof data === "object" && data && "error" in data) {
+      const errorValue = (data as { error?: string | { message?: string } }).error;
+      if (typeof errorValue === "string") {
+        message = errorValue;
+      } else if (errorValue && typeof errorValue === "object" && "message" in errorValue) {
+        message = String(errorValue.message ?? message);
+      }
+    }
     throw new ApiError(message, response.status, data);
   }
 

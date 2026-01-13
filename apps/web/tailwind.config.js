@@ -16,6 +16,27 @@ module.exports = {
         "warning": "#eab308",
         "info": "#60a5fa"
       },
+      spacing: {
+        4: "4px",
+        8: "8px",
+        12: "12px",
+        16: "16px",
+        24: "24px",
+        32: "32px",
+        48: "48px",
+        64: "64px",
+        96: "96px"
+      },
+      height: {
+        8: "32px",
+        10: "40px",
+        12: "48px"
+      },
+      width: {
+        8: "32px",
+        10: "40px",
+        12: "48px"
+      },
       fontFamily: {
         display: ["var(--font-display)", "serif"],
         sans: ["var(--font-ui)", "sans-serif"],
