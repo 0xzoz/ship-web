@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes";
 import projectsRoutes from "./routes/projects.routes";
 import usersRoutes from "./routes/users.routes";
+import connectionsRoutes from "./routes/connections.routes";
 import { loggerMiddleware } from "./middleware/logger.middleware";
 import { errorMiddleware } from "./middleware/error.middleware";
 
@@ -31,6 +32,7 @@ app.get("/api/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/projects", projectsRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/connections", connectionsRoutes);
 
 app.use(errorMiddleware);
 

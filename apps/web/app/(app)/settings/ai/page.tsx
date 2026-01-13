@@ -1,4 +1,5 @@
 import { SettingsTabs } from "../../../../components/settings/SettingsTabs";
+import { ConnectionsPanel } from "../../../../components/settings/ConnectionsPanel";
 
 export default function AiConnectionsPage() {
   return (
@@ -12,9 +13,7 @@ export default function AiConnectionsPage() {
         </h1>
       </div>
       <SettingsTabs active="ai" />
-      <div className="rounded-3xl border border-slate-700 bg-slate-800/60 p-8 text-sm text-slate-400">
-        AI connections will be available in Batch 4.
-      </div>
+      <ConnectionsPanel />
     </div>
   );
 }
