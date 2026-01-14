@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginInput } from "@ship/shared";
-import { login } from "../../lib/auth";
+import { signIn } from "next-auth/react";
 import { Button } from "../ui/Button";
 import { FormError } from "../ui/FormError";
 import { Input } from "../ui/Input";
@@ -25,7 +25,20 @@ export function LoginForm() {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await login(values);
+      const result = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        action: "login",
+        redirect: false,
+      });
+      if (result?.error) {
+        setFormError(
+          result.error === "CredentialsSignin"
+            ? "Invalid email or password"
+            : "Login failed"
+        );
+        return;
+      }
       router.push("/dashboard");
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Login failed");

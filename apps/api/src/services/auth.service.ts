@@ -1,6 +1,5 @@
 import { prisma } from "../config/database";
-import { env } from "../config/env";
-import { hashPassword, hashToken, signToken, verifyPassword } from "../utils/crypto";
+import { hashPassword, verifyPassword, generateSessionToken } from "../utils/crypto";
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -23,19 +22,18 @@ export const authService = {
       },
     });
 
-    const token = signToken({ sub: user.id, email: user.email }, env.JWT_SECRET);
-    const tokenHash = hashToken(token);
+    const sessionToken = generateSessionToken();
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
     await prisma.session.create({
       data: {
         userId: user.id,
-        tokenHash,
-        expiresAt,
+        sessionToken,
+        expires: expiresAt,
       },
     });
 
-    return { user, token, expiresAt } as const;
+    return { user, sessionToken, expiresAt } as const;
   },
 
   async login(email: string, password: string) {
@@ -49,15 +47,14 @@ export const authService = {
       return { error: "Invalid email or password" } as const;
     }
 
-    const token = signToken({ sub: user.id, email: user.email }, env.JWT_SECRET);
-    const tokenHash = hashToken(token);
+    const sessionToken = generateSessionToken();
     const expiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
     await prisma.session.create({
       data: {
         userId: user.id,
-        tokenHash,
-        expiresAt,
+        sessionToken,
+        expires: expiresAt,
       },
     });
 
@@ -66,10 +63,10 @@ export const authService = {
       data: { lastLoginAt: new Date() },
     });
 
-    return { user: updatedUser, token, expiresAt } as const;
+    return { user: updatedUser, sessionToken, expiresAt } as const;
   },
 
-  async logout(tokenHash: string) {
-    await prisma.session.deleteMany({ where: { tokenHash } });
+  async logout(sessionToken: string) {
+    await prisma.session.deleteMany({ where: { sessionToken } });
   },
 };

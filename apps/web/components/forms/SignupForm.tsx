@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signupSchema, type SignupInput } from "@ship/shared";
-import { signup } from "../../lib/auth";
+import { signIn } from "next-auth/react";
 import { Button } from "../ui/Button";
 import { FormError } from "../ui/FormError";
 import { Input } from "../ui/Input";
@@ -25,7 +25,21 @@ export function SignupForm() {
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await signup(values);
+      const result = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        name: values.name ?? "",
+        action: "signup",
+        redirect: false,
+      });
+      if (result?.error) {
+        setFormError(
+          result.error === "CredentialsSignin"
+            ? "Signup failed"
+            : result.error
+        );
+        return;
+      }
       router.push("/dashboard");
     } catch (error) {
       setFormError(error instanceof Error ? error.message : "Signup failed");

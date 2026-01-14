@@ -1,25 +1,38 @@
 import type { Request, Response, NextFunction } from "express";
-import { env } from "../config/env";
-import { hashToken, verifyToken } from "../utils/crypto";
+import { prisma } from "../config/database";
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.cookies?.ship_session;
+const sessionCookieNames = [
+  "__Secure-authjs.session-token",
+  "authjs.session-token",
+  "__Secure-next-auth.session-token",
+  "next-auth.session-token",
+];
+
+export async function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const token = sessionCookieNames
+    .map((name) => req.cookies?.[name])
+    .find(Boolean);
+
   if (!token) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  try {
-    const payload = verifyToken(token, env.JWT_SECRET) as { sub?: string };
-    if (!payload?.sub) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    req.auth = {
-      userId: payload.sub,
-      token,
-      tokenHash: hashToken(token),
-    };
-    next();
-  } catch {
+  const session = await prisma.session.findUnique({
+    where: { sessionToken: token },
+  });
+
+  if (!session || session.expires < new Date()) {
     return res.status(401).json({ error: "Unauthorized" });
   }
+
+  req.auth = {
+    userId: session.userId,
+    sessionToken: token,
+  };
+
+  return next();
 }

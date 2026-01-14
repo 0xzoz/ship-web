@@ -30,6 +30,6 @@ export async function logout() {
 }
 
 export async function getMe() {
-  const data = await apiFetch<{ user: AuthUser }>("/api/auth/me");
+  const data = await apiFetch<{ user: AuthUser }>("/api/users/me");
   return data.user;
 }

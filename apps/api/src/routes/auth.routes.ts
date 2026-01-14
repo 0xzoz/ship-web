@@ -11,6 +11,10 @@ const cookieOptions = {
   sameSite: "strict" as const,
   secure: process.env.NODE_ENV === "production",
 };
+const sessionCookieName =
+  process.env.NODE_ENV === "production"
+    ? "__Secure-authjs.session-token"
+    : "authjs.session-token";
 
 router.post("/signup", validate(signupSchema), async (req, res) => {
   const { email, password, name } = req.body;
@@ -20,7 +24,7 @@ router.post("/signup", validate(signupSchema), async (req, res) => {
     return res.status(400).json({ error: result.error });
   }
 
-  res.cookie("ship_session", result.token, {
+  res.cookie(sessionCookieName, result.sessionToken, {
     ...cookieOptions,
     expires: result.expiresAt,
   });
@@ -37,7 +41,7 @@ router.post("/login", validate(loginSchema), async (req, res) => {
     return res.status(401).json({ error: result.error });
   }
 
-  res.cookie("ship_session", result.token, {
+  res.cookie(sessionCookieName, result.sessionToken, {
     ...cookieOptions,
     expires: result.expiresAt,
   });
@@ -48,9 +52,9 @@ router.post("/login", validate(loginSchema), async (req, res) => {
 
 router.post("/logout", requireAuth, async (req, res) => {
   if (req.auth) {
-    await authService.logout(req.auth.tokenHash);
+    await authService.logout(req.auth.sessionToken);
   }
-  res.clearCookie("ship_session", cookieOptions);
+  res.clearCookie(sessionCookieName, cookieOptions);
   return res.json({ success: true });
 });
 

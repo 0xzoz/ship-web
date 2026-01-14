@@ -12,12 +12,15 @@ model User {
   email        String          @unique @db.VarChar(255)
   passwordHash String?         @map("password_hash") @db.VarChar(255)
   name         String?         @db.VarChar(255)
+  image        String?         @db.Text
+  emailVerified DateTime?      @map("email_verified")
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
   lastLoginAt  DateTime?       @map("last_login_at")
 
   oauthAccounts OAuthAccount[]
   sessions      Session[]
+  accounts      Account[]
   apiConnections ApiConnection[]
   projects      Project[]
 
@@ -42,15 +45,45 @@ model OAuthAccount {
 model Session {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @map("user_id") @db.Uuid
-  tokenHash String   @unique @map("token_hash") @db.VarChar(255)
-  expiresAt DateTime @map("expires_at")
+  sessionToken String @unique @map("session_token") @db.VarChar(255)
+  expires   DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([expiresAt])
+  @@index([expires])
   @@map("sessions")
+}
+
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @map("user_id") @db.Uuid
+  type              String  @db.VarChar(50)
+  provider          String  @db.VarChar(50)
+  providerAccountId String  @map("provider_account_id") @db.VarChar(255)
+  refreshToken      String? @map("refresh_token") @db.Text
+  accessToken       String? @map("access_token") @db.Text
+  expiresAt         Int?    @map("expires_at")
+  tokenType         String? @map("token_type") @db.VarChar(50)
+  scope             String? @db.Text
+  idToken           String? @map("id_token") @db.Text
+  sessionState      String? @map("session_state") @db.Text
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model VerificationToken {
+  identifier String @db.VarChar(255)
+  token      String @db.VarChar(255)
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }
 
 model ApiConnection {

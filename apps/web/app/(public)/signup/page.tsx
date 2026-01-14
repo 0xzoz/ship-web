@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AuthShell } from "../../../components/layout/AuthShell";
 import { SignupForm } from "../../../components/forms/SignupForm";
+import { OAuthButtons } from "../../../components/forms/OAuthButtons";
 
 export default function SignupPage() {
   return (
@@ -16,6 +17,12 @@ export default function SignupPage() {
         </div>
       }
     >
+      <OAuthButtons />
+      <div className="flex items-center gap-4 text-xs text-slate-600">
+        <span className="h-px flex-1 bg-slate-700" />
+        <span>or</span>
+        <span className="h-px flex-1 bg-slate-700" />
+      </div>
       <SignupForm />
     </AuthShell>
   );
