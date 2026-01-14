@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createProjectSchema, type CreateProjectInput } from "@ship/shared";
+import Link from "next/link";
 import {
   createProject,
   deleteProject,
@@ -188,12 +189,15 @@ function ProjectCard({ project, onDelete, isDeleting }: ProjectCardProps) {
   return (
     <div className="rounded-3xl border border-slate-700 bg-slate-800/60 p-6 shadow-[0_20px_50px_rgba(15,23,42,0.35)]">
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
+        <Link
+          href={`/projects/${project.id}/discovery`}
+          className="space-y-2"
+        >
           <p className="font-display text-2xl font-semibold">{project.name}</p>
           <p className="text-sm text-slate-400">
             {project.description || "No description yet."}
           </p>
-        </div>
+        </Link>
         <Button
           size="sm"
           variant="ghost"
