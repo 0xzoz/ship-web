@@ -1,7 +1,7 @@
 # TICKETS — Ship Web Application
 
 > **Generated from:** SYSTEM_PLAN.md | Milestone M1: Foundation
-> **Last updated:** 2026-01-11
+> **Last updated:** 2026-01-13
 
 ---
 
@@ -443,56 +443,220 @@ Frontend:
 
 ---
 
-## Batch 4 and Beyond
+## Batch 4.5: NextAuth Migration (OAuth Support)
 
-**Batch 4-5:** AI Connections (M2 start)
-- T10: API key encryption/decryption service
-- T11: AI connection API endpoints (Claude, Codex)
-- T12: AI connection UI (Settings → AI Connections)
-- T13: Connection testing functionality
+### T10: Update Prisma schema and migrate to NextAuth database model
+
+**Files/folders:**
+- `/apps/api/prisma/schema.prisma` (update)
+- `/apps/api/prisma/migrations/` (new migration)
+
+**Acceptance:**
+- [ ] Add NextAuth required tables:
+  - `Account` table (OAuth account linking)
+  - `VerificationToken` table (email verification)
+- [ ] Update `Session` table to NextAuth format:
+  - Add `sessionToken` field (unique)
+  - Add `expires` field
+  - Update relationships
+- [ ] Keep existing `users` table structure (compatible)
+- [ ] Migration preserves existing user data
+- [ ] Run migration successfully on local database
+- [ ] Document breaking changes (if any)
+
+**Output shape:**
+```
+Database:
+- NextAuth-compatible Account table for OAuth providers
+- NextAuth-compatible Session table
+- Existing users table preserved
+- All foreign keys and indexes correct
+
+Migration:
+- Existing users can still log in
+- Sessions migrate gracefully (or require re-login)
+```
+
+---
+
+### T11: Install NextAuth and configure providers
+
+**Files/folders:**
+- `/apps/web/app/api/auth/[...nextauth]/route.ts` (new)
+- `/apps/web/lib/auth.ts` (new - NextAuth config)
+- `/apps/api/.env.example` (update)
+- `/apps/web/.env.example` (update)
+
+**Acceptance:**
+- [ ] Install `next-auth` package
+- [ ] Configure NextAuth with:
+  - Credentials provider (email/password, keep existing bcrypt)
+  - Google OAuth provider
+  - GitHub OAuth provider (optional but recommended)
+- [ ] Set up Prisma adapter for NextAuth
+- [ ] Configure session strategy (JWT)
+- [ ] Set up callbacks for session/jwt
+- [ ] Add required environment variables:
+  - NEXTAUTH_URL
+  - NEXTAUTH_SECRET
+  - GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
+  - GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET (if using)
+- [ ] Update .env.example files with new vars
+
+**Output shape:**
+```
+Auth API:
+- /api/auth/signin → NextAuth sign-in page
+- /api/auth/signout → NextAuth sign-out
+- /api/auth/session → Get current session
+- /api/auth/callback/google → Google OAuth callback
+- /api/auth/callback/github → GitHub OAuth callback (optional)
+
+Configuration:
+- Credentials auth uses existing bcrypt password hashing
+- OAuth providers ready for use
+- Session management via NextAuth
+```
+
+---
+
+### T12: Update login/signup pages and auth flows
+
+**Files/folders:**
+- `/apps/web/app/(public)/login/page.tsx` (update)
+- `/apps/web/app/(public)/signup/page.tsx` (update or remove)
+- `/apps/web/components/forms/LoginForm.tsx` (update)
+- `/apps/web/components/forms/SignupForm.tsx` (update or remove)
+- `/apps/web/app/(app)/layout.tsx` (update to use NextAuth session)
+- `/apps/web/middleware.ts` (update to use NextAuth)
+- `/apps/web/lib/auth-provider.tsx` (update or remove)
+
+**Acceptance:**
+- [ ] Login page shows:
+  - "Sign in with Google" button (prominent)
+  - "Sign in with GitHub" button (optional)
+  - Divider: "Or continue with email"
+  - Email/password form (existing, uses NextAuth credentials provider)
+- [ ] Signup page:
+  - Option A: Keep separate signup page for email/password
+  - Option B: Merge into login (OAuth auto-creates accounts)
+- [ ] Update middleware to use `getToken()` from next-auth/jwt
+- [ ] Update protected layout to use `getServerSession()` from next-auth
+- [ ] Update AccountMenu component to use NextAuth session
+- [ ] Log out uses NextAuth signOut()
+- [ ] All existing protected routes still work
+- [ ] OAuth flow:
+  - Click "Sign in with Google" → redirects to Google
+  - After authorization → creates account if new, logs in if existing
+  - Redirects to /dashboard
+- [ ] Email/password flow still works (backward compatible)
+
+**Output shape:**
+```
+Login Page:
+- OAuth buttons at top (Google + GitHub)
+- Email/password form below
+- Smooth UX, matches DESIGN.md styling
+
+Auth Flow:
+- OAuth: Click → authorize → create/login → redirect to dashboard
+- Email/password: Enter credentials → login → redirect to dashboard
+- Logout: Click → sign out → redirect to /
+
+Backward Compatibility:
+- Existing users can still log in with email/password
+- All protected routes work
+- Sessions managed by NextAuth
+```
+
+---
+
+### T13: Update backend API to use NextAuth sessions
+
+**Files/folders:**
+- `/apps/api/src/middleware/auth.middleware.ts` (update)
+- `/apps/api/src/routes/*.routes.ts` (update if needed)
+- `/apps/api/src/services/auth.service.ts` (update or deprecate)
+
+**Acceptance:**
+- [ ] Update auth middleware to verify NextAuth JWT tokens
+- [ ] Keep API routes using same auth pattern (req.user)
+- [ ] Deprecate old /api/auth/signup, /api/auth/login, /api/auth/logout endpoints (or keep for backward compatibility)
+- [ ] Ensure all protected API routes work with NextAuth sessions
+- [ ] Update user creation flow for OAuth (auto-create on first login)
+- [ ] Test API endpoints with NextAuth session tokens
+
+**Output shape:**
+```
+API:
+- All protected routes work with NextAuth sessions
+- Middleware validates NextAuth JWT tokens
+- req.user populated correctly
+- OAuth users auto-created on first login
+- Existing email/password users still work
+
+Backward Compatibility:
+- API clients using NextAuth tokens work seamlessly
+```
+
+---
+
+## Batch 5 and Beyond
+
+**Batch 5:** AI Connections (M2 start) — COMPLETED in Batch 4
+- T14: API key encryption/decryption service ✅
+- T15: AI connection API endpoints (Claude, Codex) ✅
+- T16: AI connection UI (Settings → AI Connections) ✅
+- T17: Connection testing functionality ✅
 
 **Batch 6-7:** Discovery Phase (M2 completion)
-- T14: Discovery chat interface (frontend)
-- T15: Claude API client integration
-- T16: WebSocket setup for real-time chat
-- T17: DISCOVERY.md generation
+- T18: Discovery chat interface (frontend)
+- T19: Claude API client integration
+- T20: WebSocket setup for real-time chat
+- T21: DISCOVERY.md generation
 
 **Batch 8-9:** Requirements Phase (M3 start)
-- T18: Requirements editor UI
-- T19: Feature list management (add, remove, prioritize)
-- T20: REQUIREMENTS.md generation
+- T22: Requirements editor UI
+- T23: Feature list management (add, remove, prioritize)
+- T24: REQUIREMENTS.md generation
 
 **Batch 10-12:** Build Orchestration (M3 core)
-- T21: Build progress UI with WebSocket updates
-- T22: Orchestration engine (state machine)
-- T23: Claude API integration for planning
-- T24: Codex API integration for code generation
-- T25: Job queue setup (BullMQ or pg-boss)
-- T26: Error handling and recovery
+- T25: Build progress UI with WebSocket updates
+- T26: Orchestration engine (state machine)
+- T27: Claude API integration for planning
+- T28: Codex API integration for code generation
+- T29: Job queue setup (BullMQ or pg-boss)
+- T30: Error handling and recovery
 
 **Batch 13-14:** Review & Deploy (M3 completion)
-- T27: Review phase UI (preview, checklist)
-- T28: Vercel deployment integration
-- T29: Deployed success screen
+- T31: Review phase UI (preview, checklist)
+- T32: Vercel deployment integration
+- T33: Deployed success screen
 
 **Batch 15-17:** Polish & Launch (M4)
-- T30: Accessibility audit and fixes
-- T31: Performance optimization
-- T32: Security audit
-- T33: User onboarding flow improvements
-- T34: Analytics and monitoring
-- T35: Documentation
+- T34: Accessibility audit and fixes
+- T35: Performance optimization
+- T36: Security audit
+- T37: User onboarding flow improvements
+- T38: Analytics and monitoring
+- T39: Documentation
 
 ---
 
 ## Status
 
-**Current Batch:** Batch 1 (T1-T3)
-**Next Batch:** Batch 2 (T4-T6)
+**Completed:**
+- ✅ Batch 1 (T1-T3): Foundation
+- ✅ Batch 2 (T4-T6): Auth UI + Dashboard
+- ✅ Batch 3 (T7-T9): Settings + Error Handling
+- ✅ Batch 4 (T14-T17): AI Connections
+
+**Current Batch:** Batch 4.5 (T10-T13): NextAuth Migration
+**Next Batch:** Batch 6 (T18-T21): Discovery Phase
 
 **Milestone Progress:**
-- M1: Foundation → In Progress (Batch 1-3)
-- M2: AI Integration → Planned (Batch 4-7)
+- M1: Foundation → Complete ✅ (Batch 1-3)
+- M2: AI Integration → In Progress (Batch 4-7)
 - M3: Build Orchestration → Planned (Batch 8-14)
 - M4: Polish & Launch → Planned (Batch 15-17)
 
@@ -500,23 +664,25 @@ Frontend:
 
 ## Notes for Builder
 
-1. **CEO Decisions Needed Before Implementation:**
-   - Auth library: next-auth vs Clerk (impacts T3, T4)
-   - Queue system: BullMQ vs pg-boss (impacts Batch 10+)
-   - ORM: Prisma vs Drizzle (impacts T2)
-   - Backend runtime: Node.js vs Bun (impacts T1)
+1. **CEO Decisions Made:**
+   - ✅ Auth library: NextAuth.js (migrating in Batch 4.5)
+   - ✅ ORM: Prisma
+   - ✅ Backend runtime: Node.js
 
-2. **Dependencies:**
+2. **CEO Decisions Still Needed:**
+   - Queue system: BullMQ vs pg-boss (impacts Batch 10+)
+
+3. **Dependencies:**
    - T2 must complete before T3 (need database for auth)
    - T3 must complete before T4 (need auth API for forms)
    - T4-T5 must complete before T6 (need UI to display projects)
 
-3. **Testing:**
+4. **Testing:**
    - Run `dev verify` after each batch
    - Manual testing of auth flows critical (signup → login → protected route)
    - Ensure database migrations work cleanly
 
-4. **Security Reminders:**
+5. **Security Reminders:**
    - Never commit .env files
    - API keys encrypted in database
    - Passwords bcrypt hashed (cost 12+)
@@ -525,4 +691,4 @@ Frontend:
 
 ---
 
-**Last updated:** 2026-01-11
+**Last updated:** 2026-01-13

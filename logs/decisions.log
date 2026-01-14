@@ -153,40 +153,61 @@ This file tracks significant technical and architectural decisions made during t
 
 ---
 
+## 2026-01-13 — Migrate to NextAuth.js for OAuth Support
+
+**Decision:** Migrate from custom email/password auth to NextAuth.js (Auth.js) with OAuth providers
+
+**Rationale:**
+- Current email/password flow is clunky, hurts conversion
+- OAuth (Google, GitHub) dramatically improves UX - no password fatigue
+- NextAuth is free, self-hosted, integrates with existing Prisma setup
+- Early enough in project that migration won't be painful
+- Industry standard for Next.js authentication
+
+**Impact:**
+- Need to update Prisma schema (add Account/Session tables for NextAuth)
+- Replace custom auth service with NextAuth API routes
+- Update login/signup pages to use NextAuth components
+- Update middleware to use NextAuth session
+- Keep existing user/project data - migration path needed
+- API key storage approach stays the same (correct pattern)
+
+**Implementation:**
+- Insert new Batch 4.5 before continuing to Batch 5 (Discovery Phase)
+- ~2-3 tickets of work
+- After migration, users can sign in with Google/GitHub + email/password
+
+---
+
 ## Open Questions for CEO
 
 These decisions need CEO input before implementation:
 
-1. **Authentication library:** next-auth (Auth.js) vs Clerk?
-   - next-auth: Self-hosted, free, more control
-   - Clerk: Managed service, easier setup, costs $$$
-   - **Recommendation:** next-auth for MVP (cost-effective, flexible)
-
-2. **Queue system:** BullMQ (Redis-based) vs pg-boss (Postgres-based)?
+1. **Queue system:** BullMQ (Redis-based) vs pg-boss (Postgres-based)?
    - BullMQ: More features, requires Redis (another dependency)
    - pg-boss: Simpler, uses existing Postgres, fewer features
    - **Recommendation:** pg-boss for MVP (simpler stack)
 
-3. **ORM:** Prisma vs Drizzle?
+2. **ORM:** Prisma vs Drizzle?
    - Prisma: Better DX, migrations, studio GUI
    - Drizzle: Better performance, more control, newer
    - **Recommendation:** Prisma (mature, team familiar)
 
-4. **Backend runtime:** Node.js vs Bun?
+3. **Backend runtime:** Node.js vs Bun?
    - Node.js: Ecosystem maturity, battle-tested
    - Bun: Faster, modern, less mature
    - **Recommendation:** Node.js 20+ for MVP (stability)
 
-5. **File storage:** Filesystem vs S3/R2?
+4. **File storage:** Filesystem vs S3/R2?
    - Filesystem: Simpler for MVP, free
    - S3/R2: Scalable, requires setup and costs
    - **Recommendation:** Filesystem for MVP, migrate later
 
-6. **Deployment platform priority:** Vercel only vs Vercel + Netlify?
+5. **Deployment platform priority:** Vercel only vs Vercel + Netlify?
    - Vercel only: Focus, best Next.js integration
    - Both: More flexibility, more complexity
    - **Recommendation:** Vercel only for MVP
 
 ---
 
-**Last updated:** 2026-01-11
+**Last updated:** 2026-01-13
