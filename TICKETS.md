@@ -601,122 +601,183 @@ Backward Compatibility:
 
 ---
 
-## Batch 6.5: AI Connections UX Polish (Mini-batch)
+## Batch 6.5: AI Connections OAuth-like Flow (Mini-batch)
 
-### T22: Add help content and API key guidance
+### T22: Implement browser tab flow for API key connection
 
 **Files/folders:**
 - `/apps/web/components/settings/ConnectionsPanel.tsx` (update)
-- `/apps/web/components/settings/ConnectionHelp.tsx` (new)
+- `/apps/web/components/settings/ConnectionModal.tsx` (new)
 
 **Acceptance:**
-- [ ] Add help section for each service showing:
-  - Claude: "Get your API key at console.anthropic.com/settings/keys"
-  - Codex/OpenAI: "Get your API key at platform.openai.com/api-keys"
-  - Direct links that open in new tab
-- [ ] Add format examples:
-  - Claude: `sk-ant-api03-...` (shows expected format)
-  - OpenAI: `sk-...` (shows expected format)
-- [ ] Add tooltip or info icon: "Why do I need this?" → explains API keys are required, Ship doesn't provide AI services
-- [ ] Add visual guide (optional): Screenshot or diagram showing where to find keys
-- [ ] Update modal with step-by-step instructions:
-  1. Click link to provider console
-  2. Create new API key
-  3. Copy and paste here
-  4. Test connection
+- [ ] Replace simple modal with guided OAuth-like flow:
+  - Click "Connect Claude" → opens new modal
+  - Modal shows 3-step process with clear visual steps
+  - Step 1: "Open your API console" with prominent button
+  - Step 2: "Create an API key" with brief instructions
+  - Step 3: "Paste your key below" with ready input field
+- [ ] "Open Console" button behavior:
+  - Claude: Opens `https://console.anthropic.com/settings/keys` in new tab
+  - OpenAI: Opens `https://platform.openai.com/api-keys` in new tab
+  - Uses `window.open(url, '_blank')` with proper rel attributes
+  - Button includes external link icon: "Open console.anthropic.com →"
+- [ ] Modal stays open while user gets key (doesn't auto-close)
+- [ ] Input field is:
+  - Pre-focused when modal opens
+  - Type="password" for security
+  - Has placeholder: "sk-ant-api03-..." or "sk-..."
+  - Format hint below: "Your API key should start with sk-ant-"
+- [ ] Flow feels guided and intentional (like `gh auth login`)
 
 **Output shape:**
 ```
-Connection Modal:
-- Header: "Connect Claude API"
-- Help text: "Get your API key from console.anthropic.com"
-- Link button: "Open API Keys Page →"
-- Format hint below input: "Format: sk-ant-api03-..."
-- Clear, friendly guidance throughout
+┌─────────────────────────────────────────┐
+│  Connect Your Claude API                │
+├─────────────────────────────────────────┤
+│                                         │
+│  ① Open your API console                │
+│     [Open console.anthropic.com →]      │
+│                                         │
+│  ② Create an API key                    │
+│     If you don't have one, click        │
+│     "Create Key" in the console         │
+│                                         │
+│  ③ Paste your key below                 │
+│     ┌─────────────────────────────────┐ │
+│     │ ••••••••••••••••••              │ │
+│     └─────────────────────────────────┘ │
+│     Format: sk-ant-api03-...            │
+│                                         │
+│        [Cancel]  [Connect →]            │
+└─────────────────────────────────────────┘
 ```
 
 ---
 
-### T23: Improve connection modal design and validation
+### T23: Add real-time validation and visual feedback
 
 **Files/folders:**
-- `/apps/web/components/settings/ConnectionsPanel.tsx` (update)
-- `/apps/web/lib/connections.ts` (update validation)
+- `/apps/web/components/settings/ConnectionModal.tsx` (update)
+- `/apps/web/lib/validation.ts` (new utility for key validation)
 
 **Acceptance:**
-- [ ] Add API key format validation (client-side):
+- [ ] Real-time API key format validation as user types:
   - Claude: Must start with `sk-ant-`
   - OpenAI: Must start with `sk-`
-  - Show error if format is invalid before submitting
-- [ ] Improve modal design:
-  - Add provider logo/icon (Claude icon, OpenAI icon)
-  - Better spacing and typography
-  - Visual hierarchy: Help → Input → Actions
-- [ ] Show validation states:
-  - ✓ Valid format (green checkmark)
-  - ✗ Invalid format (red error message)
-  - Clear error messages: "Invalid format. Claude API keys start with sk-ant-"
-- [ ] Disable "Save" button until format is valid
-- [ ] Add character counter for debugging (optional)
-- [ ] Better focus states and accessibility
+  - Min length check (keys are typically 40+ chars)
+- [ ] Visual validation states:
+  - Empty: Neutral state, hint text visible
+  - Invalid format: Red border, error message below
+    - "Invalid format. Claude keys start with sk-ant-"
+  - Valid format: Green border, checkmark icon
+    - "Format looks good!"
+  - Testing: Loading spinner, "Testing connection..."
+  - Success: Green checkmark, "Connected successfully!"
+  - Failed: Red X, "Connection failed. Check your key."
+- [ ] Disable "Connect" button until format is valid
+- [ ] After clicking Connect:
+  - Show loading state
+  - Call test endpoint automatically
+  - Show success/failure message
+  - Auto-close modal on success after 1s
+- [ ] Accessibility:
+  - Error messages announced to screen readers
+  - Clear focus indicators
+  - Keyboard navigation works
 
 **Output shape:**
 ```
-Validation:
-- Real-time format checking as user types
-- Clear error messages
-- Can't submit invalid format
+Validation States:
 
-Design:
-- Professional, matches DESIGN.md
-- Provider branding (icons/colors)
-- Intuitive flow
+Empty:
+┌─────────────────────────────────┐
+│ sk-ant-api03-...                │ ← hint text
+└─────────────────────────────────┘
+
+Invalid:
+┌─────────────────────────────────┐
+│ sk-wrong-format                 │ ← red border
+└─────────────────────────────────┘
+✗ Invalid format. Claude keys start with sk-ant-
+
+Valid:
+┌─────────────────────────────────┐
+│ sk-ant-api03-xxxxxxxxxxxxx      │ ← green border
+└─────────────────────────────────┘
+✓ Format looks good!
+
+Testing:
+⏳ Testing connection...
+
+Success:
+✓ Connected successfully!
 ```
 
 ---
 
-### T24: Add masked key preview and better status indicators
+### T24: Add masked key preview and improved connection status
 
 **Files/folders:**
 - `/apps/web/components/settings/ConnectionsPanel.tsx` (update)
+- `/apps/web/components/settings/ConnectionCard.tsx` (new)
 - `/apps/api/src/routes/connections.routes.ts` (update to return partial key)
 
 **Acceptance:**
-- [ ] When connection exists, show masked key preview:
-  - Claude: `sk-ant-***...xyz` (first 7 chars + last 3 chars, rest masked)
-  - OpenAI: `sk-***...xyz` (first 3 chars + last 3 chars, rest masked)
-- [ ] Improve status badges:
-  - ✓ Connected (green badge with checkmark)
-  - ⚠ Not tested (amber badge with warning)
-  - ✗ Failed (red badge with error)
-  - Show last test time: "Tested 2 hours ago"
-- [ ] Add "last used" timestamp (if available):
-  - "Last used: 5 minutes ago"
-  - "Never used" if never called
-- [ ] Better visual hierarchy in connection cards:
-  - Service name (prominent)
-  - Status badge (color-coded)
-  - Key preview (subtle)
-  - Last tested time (subtle)
-- [ ] Add copy button for masked key preview (optional)
+- [ ] Backend: Update GET `/api/connections` to return partial keys:
+  - First 7 chars + last 3 chars for Claude (e.g., `sk-ant-...xyz`)
+  - First 3 chars + last 3 chars for OpenAI (e.g., `sk-...xyz`)
+  - Never return full key in API responses
+  - Add `partialKey` field to response
+- [ ] Frontend: Show connection status in card:
+  - When connected: Show masked key preview
+  - Color-coded status badge:
+    - 🟢 Connected (green) - tested and working
+    - 🟡 Not tested (amber) - never tested
+    - 🔴 Failed (red) - last test failed
+  - Last tested timestamp: "Tested 2 hours ago"
+  - "Never tested" if never tested
+- [ ] Update "Connect" button to say "Update key" when already connected
+- [ ] Better visual hierarchy:
+  - Service name and description (top)
+  - Status badge and key preview (middle)
+  - Action buttons (bottom)
+- [ ] Connection card matches DESIGN.md styling
 
 **Output shape:**
 ```
-Connection Card:
-┌─────────────────────────────────┐
-│ Claude                          │
-│ Planning and discovery partner  │
-│                                 │
-│ ✓ Connected  Tested 2h ago     │
-│ Key: sk-ant-***...xyz          │
-│                                 │
-│ [Update] [Test] [Disconnect]   │
-└─────────────────────────────────┘
+Connected State:
+┌─────────────────────────────────────┐
+│ Claude                              │
+│ Planning and discovery partner      │
+│                                     │
+│ 🟢 Connected                        │
+│ Key: sk-ant-***...xyz               │
+│ Tested 2 hours ago                  │
+│                                     │
+│ [Update key] [Test] [Disconnect]    │
+└─────────────────────────────────────┘
 
-Status Indicators:
-- Color-coded badges (green/amber/red)
-- Clear status text
-- Timestamps for context
+Not Connected State:
+┌─────────────────────────────────────┐
+│ Claude                              │
+│ Planning and discovery partner      │
+│                                     │
+│ Not connected                       │
+│                                     │
+│ [Connect]                           │
+└─────────────────────────────────────┘
+
+Failed State:
+┌─────────────────────────────────────┐
+│ Claude                              │
+│ Planning and discovery partner      │
+│                                     │
+│ 🔴 Connection failed                │
+│ Key: sk-ant-***...xyz               │
+│ Last tested 1 hour ago              │
+│                                     │
+│ [Update key] [Test] [Disconnect]    │
+└─────────────────────────────────────┘
 ```
 
 ---
