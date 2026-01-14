@@ -601,6 +601,126 @@ Backward Compatibility:
 
 ---
 
+## Batch 6.5: AI Connections UX Polish (Mini-batch)
+
+### T22: Add help content and API key guidance
+
+**Files/folders:**
+- `/apps/web/components/settings/ConnectionsPanel.tsx` (update)
+- `/apps/web/components/settings/ConnectionHelp.tsx` (new)
+
+**Acceptance:**
+- [ ] Add help section for each service showing:
+  - Claude: "Get your API key at console.anthropic.com/settings/keys"
+  - Codex/OpenAI: "Get your API key at platform.openai.com/api-keys"
+  - Direct links that open in new tab
+- [ ] Add format examples:
+  - Claude: `sk-ant-api03-...` (shows expected format)
+  - OpenAI: `sk-...` (shows expected format)
+- [ ] Add tooltip or info icon: "Why do I need this?" → explains API keys are required, Ship doesn't provide AI services
+- [ ] Add visual guide (optional): Screenshot or diagram showing where to find keys
+- [ ] Update modal with step-by-step instructions:
+  1. Click link to provider console
+  2. Create new API key
+  3. Copy and paste here
+  4. Test connection
+
+**Output shape:**
+```
+Connection Modal:
+- Header: "Connect Claude API"
+- Help text: "Get your API key from console.anthropic.com"
+- Link button: "Open API Keys Page →"
+- Format hint below input: "Format: sk-ant-api03-..."
+- Clear, friendly guidance throughout
+```
+
+---
+
+### T23: Improve connection modal design and validation
+
+**Files/folders:**
+- `/apps/web/components/settings/ConnectionsPanel.tsx` (update)
+- `/apps/web/lib/connections.ts` (update validation)
+
+**Acceptance:**
+- [ ] Add API key format validation (client-side):
+  - Claude: Must start with `sk-ant-`
+  - OpenAI: Must start with `sk-`
+  - Show error if format is invalid before submitting
+- [ ] Improve modal design:
+  - Add provider logo/icon (Claude icon, OpenAI icon)
+  - Better spacing and typography
+  - Visual hierarchy: Help → Input → Actions
+- [ ] Show validation states:
+  - ✓ Valid format (green checkmark)
+  - ✗ Invalid format (red error message)
+  - Clear error messages: "Invalid format. Claude API keys start with sk-ant-"
+- [ ] Disable "Save" button until format is valid
+- [ ] Add character counter for debugging (optional)
+- [ ] Better focus states and accessibility
+
+**Output shape:**
+```
+Validation:
+- Real-time format checking as user types
+- Clear error messages
+- Can't submit invalid format
+
+Design:
+- Professional, matches DESIGN.md
+- Provider branding (icons/colors)
+- Intuitive flow
+```
+
+---
+
+### T24: Add masked key preview and better status indicators
+
+**Files/folders:**
+- `/apps/web/components/settings/ConnectionsPanel.tsx` (update)
+- `/apps/api/src/routes/connections.routes.ts` (update to return partial key)
+
+**Acceptance:**
+- [ ] When connection exists, show masked key preview:
+  - Claude: `sk-ant-***...xyz` (first 7 chars + last 3 chars, rest masked)
+  - OpenAI: `sk-***...xyz` (first 3 chars + last 3 chars, rest masked)
+- [ ] Improve status badges:
+  - ✓ Connected (green badge with checkmark)
+  - ⚠ Not tested (amber badge with warning)
+  - ✗ Failed (red badge with error)
+  - Show last test time: "Tested 2 hours ago"
+- [ ] Add "last used" timestamp (if available):
+  - "Last used: 5 minutes ago"
+  - "Never used" if never called
+- [ ] Better visual hierarchy in connection cards:
+  - Service name (prominent)
+  - Status badge (color-coded)
+  - Key preview (subtle)
+  - Last tested time (subtle)
+- [ ] Add copy button for masked key preview (optional)
+
+**Output shape:**
+```
+Connection Card:
+┌─────────────────────────────────┐
+│ Claude                          │
+│ Planning and discovery partner  │
+│                                 │
+│ ✓ Connected  Tested 2h ago     │
+│ Key: sk-ant-***...xyz          │
+│                                 │
+│ [Update] [Test] [Disconnect]   │
+└─────────────────────────────────┘
+
+Status Indicators:
+- Color-coded badges (green/amber/red)
+- Clear status text
+- Timestamps for context
+```
+
+---
+
 ## Batch 5 and Beyond
 
 **Batch 5:** AI Connections (M2 start) — COMPLETED in Batch 4
@@ -609,37 +729,44 @@ Backward Compatibility:
 - T16: AI connection UI (Settings → AI Connections) ✅
 - T17: Connection testing functionality ✅
 
-**Batch 6-7:** Discovery Phase (M2 completion)
-- T18: Discovery chat interface (frontend)
-- T19: Claude API client integration
-- T20: WebSocket setup for real-time chat
-- T21: DISCOVERY.md generation
+**Batch 6:** Discovery Phase (M2 completion) — COMPLETED
+- T18: Discovery chat interface (frontend) ✅
+- T19: Claude API client integration ✅
+- T20: WebSocket setup for real-time chat ✅
+- T21: DISCOVERY.md generation ✅
 
-**Batch 8-9:** Requirements Phase (M3 start)
-- T22: Requirements editor UI
-- T23: Feature list management (add, remove, prioritize)
-- T24: REQUIREMENTS.md generation
+**Batch 6.5:** AI Connections UX Polish (Mini-batch)
+- T22: Add help content and API key guidance
+- T23: Improve connection modal design and validation
+- T24: Add masked key preview and better status indicators
 
-**Batch 10-12:** Build Orchestration (M3 core)
-- T25: Build progress UI with WebSocket updates
-- T26: Orchestration engine (state machine)
-- T27: Claude API integration for planning
-- T28: Codex API integration for code generation
-- T29: Job queue setup (BullMQ or pg-boss)
-- T30: Error handling and recovery
+**Batch 7:** Requirements Phase (M3 start) — Next after 6.5
 
-**Batch 13-14:** Review & Deploy (M3 completion)
-- T31: Review phase UI (preview, checklist)
-- T32: Vercel deployment integration
-- T33: Deployed success screen
+**Batch 8:** Requirements Phase (M3 start)
+- T25: Requirements editor UI
+- T26: Feature list management (add, remove, prioritize)
+- T27: REQUIREMENTS.md generation
 
-**Batch 15-17:** Polish & Launch (M4)
-- T34: Accessibility audit and fixes
-- T35: Performance optimization
-- T36: Security audit
-- T37: User onboarding flow improvements
-- T38: Analytics and monitoring
-- T39: Documentation
+**Batch 9-11:** Build Orchestration (M3 core)
+- T28: Build progress UI with WebSocket updates
+- T29: Orchestration engine (state machine)
+- T30: Claude API integration for planning
+- T31: Codex API integration for code generation
+- T32: Job queue setup (BullMQ or pg-boss)
+- T33: Error handling and recovery
+
+**Batch 12-13:** Review & Deploy (M3 completion)
+- T34: Review phase UI (preview, checklist)
+- T35: Vercel deployment integration
+- T36: Deployed success screen
+
+**Batch 14-16:** Polish & Launch (M4)
+- T37: Accessibility audit and fixes
+- T38: Performance optimization
+- T39: Security audit
+- T40: User onboarding flow improvements
+- T41: Analytics and monitoring
+- T42: Documentation
 
 ---
 
@@ -650,9 +777,11 @@ Backward Compatibility:
 - ✅ Batch 2 (T4-T6): Auth UI + Dashboard
 - ✅ Batch 3 (T7-T9): Settings + Error Handling
 - ✅ Batch 4 (T14-T17): AI Connections
+- ✅ Batch 4.5 (T10-T13): NextAuth Migration
+- ✅ Batch 6 (T18-T21): Discovery Phase
 
-**Current Batch:** Batch 4.5 (T10-T13): NextAuth Migration
-**Next Batch:** Batch 6 (T18-T21): Discovery Phase
+**Current Batch:** Batch 6.5 (T22-T24): AI Connections UX Polish
+**Next Batch:** Batch 7 (T25-T27): Requirements Phase
 
 **Milestone Progress:**
 - M1: Foundation → Complete ✅ (Batch 1-3)
